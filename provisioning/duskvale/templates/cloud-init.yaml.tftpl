@@ -1,0 +1,29 @@
+#cloud-config
+hostname: ${vm_name}
+timezone: ${timezone}
+
+disable_root: false
+ssh_pwauth: true
+
+packages:
+  - openssh-server
+  - ncurses
+  - vim
+  - tar
+  - bash-completion
+  - less
+  - net-tools
+
+write_files:
+  - path: /etc/ssh/sshd_config.d/00-incus.conf
+    permissions: "0600"
+    content: |
+      PermitRootLogin yes
+      PasswordAuthentication yes
+
+runcmd:
+  - sed -i "1i PermitRootLogin yes\nPasswordAuthentication yes" /etc/ssh/sshd_config
+  - echo 'root:${root_password}' | chpasswd
+  - passwd -u root
+  - systemctl enable --now sshd
+  - systemctl restart sshd
