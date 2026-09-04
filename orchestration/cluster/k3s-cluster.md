@@ -1,6 +1,6 @@
 # 🚀 K3s HA Cluster – FULL FRIENDLY GUIDE (AlmaLinux 9)
 
-> **Status:** ✅ Rancher амжилттай ассан
+> **Status:** ✅ Rancher
 > **Scope:** AlmaLinux 9 + K3s HA + kube-vip + MetalLB + Ingress-NGINX + Rancher
 > **Style:** Friendly, copy‑paste ready, production‑safe
 
@@ -113,7 +113,7 @@ systemctl enable chronyd --now
 ```bash
 cat <<EOF >>/etc/hosts
 172.30.200.19 k8s-api-vip
-172.30.200.21 rancher.somd.k8s
+172.30.200.21 rancher.starfall.k3s
 172.30.200.22 node1
 172.30.200.23 node2
 172.30.200.24 node3
@@ -358,7 +358,7 @@ kubectl create namespace cattle-system
 ```bash
 helm install rancher rancher-stable/rancher \
   --namespace cattle-system \
-  --set hostname=rancher.somd.k8s \
+  --set hostname=rancher.starfall.k3s \
   --set replicas=3 \
   --set ingress.ingressClassName=nginx \
   --set ingress.tls.source=rancher \
@@ -366,7 +366,7 @@ helm install rancher rancher-stable/rancher \
 ```
 
 Access:
-👉 **[https://rancher.somd.k8s](https://rancher.somd.k8s)**
+👉 **[https://rancher.starfall.k3s](https://rancher.starfall.k3s)**
 
 ---
 
