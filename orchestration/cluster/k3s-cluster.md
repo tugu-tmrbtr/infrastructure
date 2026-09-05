@@ -11,7 +11,7 @@
 ```
 Client / Browser
    ↓
-MetalLB VIP (172.30.200.21)
+MetalLB VIP (10.10.10.40)
    ↓
 Ingress‑NGINX
    ↓
@@ -19,7 +19,7 @@ Rancher UI
 
 kubectl / nodes
    ↓
-kube‑vip API VIP (172.30.200.19)
+kube‑vip API VIP (10.10.10.49)
    ↓
 K3s Control Plane (3 nodes, embedded etcd)
 ```
@@ -32,21 +32,21 @@ K3s Control Plane (3 nodes, embedded etcd)
 
 | Node  | IP           |
 | ----- | ------------ |
-| node1 | 172.30.200.22 |
-| node2 | 172.30.200.23 |
-| node3 | 172.30.200.24 |
+| starfall-01 | 10.10.10.41 |
+| starfall-02 | 10.10.10.42 |
+| starfall-03 | 10.10.10.43 |
 
 ### VIPs
 
 | Purpose                   | IP           |
 | ------------------------- | ------------ |
-| Kubernetes API (kube‑vip) | 172.30.200.19 |
-| Ingress / LB (MetalLB)    | 172.30.200.21 |
+| Kubernetes API (kube‑vip) | 10.10.10.49 |
+| Ingress / LB (MetalLB)    | 10.10.10.40 |
 
 ### OS / Network
 
 * OS: **AlmaLinux 9**
-* Interface: **ens192**
+* Interface: **enp5s0**
 
 ---
 
@@ -112,11 +112,11 @@ systemctl enable chronyd --now
 
 ```bash
 cat <<EOF >>/etc/hosts
-172.30.200.19 k8s-api-vip
-172.30.200.21 rancher.starfall.k3s
-172.30.200.22 node1
-172.30.200.23 node2
-172.30.200.24 node3
+10.10.10.49 k8s-api-vip
+10.10.10.40 rancher.starfall.k3s
+10.10.10.41 starfall-01
+10.10.10.42 starfall-02
+10.10.10.43 starfall-03
 EOF
 ```
 
@@ -128,12 +128,12 @@ reboot
 
 ---
 
-# 🟢 STEP 2: K3s HA – First Control Plane (node1)
+# 🟢 STEP 2: K3s HA – First Control Plane (starfall-01)
 
 ```bash
 curl -sfL https://get.k3s.io | sh -s - server \
   --cluster-init \
-  --tls-san=172.30.200.19 \
+  --tls-san=10.10.10.49 \
   --disable=traefik \
   --disable=servicelb \
   --write-kubeconfig-mode=644
@@ -142,7 +142,7 @@ curl -sfL https://get.k3s.io | sh -s - server \
 ```bash
 mkdir -p ~/.kube
 cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
-sed -i 's/127.0.0.1/172.30.200.19/g' ~/.kube/config
+sed -i 's/127.0.0.1/10.10.10.49/g' ~/.kube/config
 kubectl get nodes
 ```
 
@@ -219,9 +219,9 @@ spec:
         args: ["manager"]
         env:
         - name: vip_interface
-          value: "ens192"
+          value: "enp5s0"
         - name: address
-          value: "172.30.200.19"
+          value: "10.10.10.49"
         - name: vip_cidr
           value: "32"
         - name: port
@@ -248,16 +248,16 @@ EOF
 Verify:
 
 ```bash
-ip addr show ens192 | grep 172.30.200.19
-ping -c 2 172.30.200.19
+ip addr show enp5s0 | grep 10.10.10.49
+ping -c 2 10.10.10.49
 ```
 
 ---
 
-# 🟢 STEP 4: Join node2 & node3
+# 🟢 STEP 4: Join starfall-02 & starfall-03
 
 ```bash
-export K3S_URL="https://172.30.200.19:6443"
+export K3S_URL="https://10.10.10.49:6443"
 export K3S_TOKEN="<NODE_TOKEN>"
 
 curl -sfL https://get.k3s.io | sh -s - server \
@@ -284,7 +284,7 @@ metadata:
   namespace: metallb-system
 spec:
   addresses:
-  - 172.30.200.21/32
+  - 10.10.10.40/32
 ---
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
@@ -295,7 +295,7 @@ spec:
   ipAddressPools:
   - ingress-pool
   interfaces:
-  - ens192
+  - enp5s0
 EOF
 ```
 
@@ -316,7 +316,7 @@ Verify:
 
 ```bash
 kubectl get svc -n ingress-nginx
-# EXTERNAL-IP = 172.30.200.21
+# EXTERNAL-IP = 10.10.10.40
 ```
 
 ---
@@ -345,7 +345,7 @@ curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 ```bash
 mkdir -p /root/.kube
 cp /etc/rancher/k3s/k3s.yaml /root/.kube/config
-sed -i 's/127.0.0.1/172.30.200.19/g' /root/.kube/config
+sed -i 's/127.0.0.1/10.10.10.49/g' /root/.kube/config
 export KUBECONFIG=/root/.kube/config
 ```
 
